@@ -13,7 +13,7 @@ export default function Home() {
         className="absolute inset-0 w-full h-full object-cover opacity-70"
       />
       {/* Overlay para contraste */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/10" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/50 to-black/10" />
 
       {/* Contenido: 55% hero / 45% noticias */}
       <div className="relative h-full grid grid-rows-[55%_45%]">

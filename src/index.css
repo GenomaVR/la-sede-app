@@ -101,4 +101,5 @@
 button::before,
 button::after {
   content: none !important;
+  body { margin: 0}
 }
