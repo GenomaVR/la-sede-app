@@ -21,22 +21,30 @@ export default function Canchas() {
   const [msgType, setMsgType] = useState('success')
 
   const reservar = e => {
-    e.preventDefault()
-    setMsg('')
-    try {
-      reservarCancha({ 
-        canchaId: Number(canchaId), 
-        fecha, 
-        horaInicio, 
-        horaFin 
-      })
-      setMsg('Reserva confirmada ✅')
-      setMsgType('success')
-    } catch (ex) {
-      setMsg(ex.message)
-      setMsgType('error')
-    }
+  e.preventDefault()
+  setMsg('')
+
+  const cancha = state.canchas.find(c => c.id === Number(canchaId))
+  if (!cancha || cancha.estado !== 'disponible') {
+    setMsg('Esta cancha no está disponible ❌')
+    setMsgType('error')
+    return
   }
+
+  try {
+    reservarCancha({ 
+      canchaId: Number(canchaId), 
+      fecha, 
+      horaInicio, 
+      horaFin 
+    })
+    setMsg('Reserva confirmada ✅')
+    setMsgType('success')
+  } catch (ex) {
+    setMsg(ex.message)
+    setMsgType('error')
+  }
+}
 
   const canchaOptions = state.canchas.map(c => ({
     value: c.id,

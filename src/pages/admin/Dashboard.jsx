@@ -7,7 +7,9 @@ export default function Dashboard() {
   const ingresosCuotas = state.usuarios.filter(u => u.cuota?.estado === 'paga').length * 10000
   const entradasVendidas = state.entradas.reduce((acc, e) => acc + e.cantidad, 0)
   const totalUsuarios = state.usuarios.length
-  const usuariosActivos = state.usuarios.filter(u => u.activo).length
+  const usuariosActivos = state.usuarios.filter(
+  u => u.cuota?.estado === 'paga'
+  ).length
 
   return (
     <Container>

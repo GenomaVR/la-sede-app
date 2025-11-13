@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { readState, writeState } from '../services/storage'
 import { seed } from '../data/seed'
+import { useNavigate } from 'react-router-dom'
+
 
 const AuthContext = createContext()
 
@@ -49,14 +51,19 @@ export function AuthProvider({ children }) {
 
   // 4) Auth API
   const login = (email, password) => {
-    const u = state.usuarios.find(
-      x => x.email === email && x.password === password && x.activo
-    )
-    if (!u) throw new Error('Credenciales inválidas o usuario inactivo')
-    setUser({ id: u.id, nombre: u.nombre, rol: u.rol, email: u.email })
+  const u = state.usuarios.find(
+    x => x.email === email && x.password === password && x.activo
+  )
+  if (!u) throw new Error('Credenciales inválidas o usuario inactivo')
+  
+  setUser({ id: u.id, nombre: u.nombre, rol: u.rol, email: u.email })
+  window.location.reload()
   }
 
-  const logout = () => setUser(null)
+  const logout = () => {
+  setUser(null)
+  window.location.reload()
+  }
 
   const value = { user, login, logout, state, setState }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

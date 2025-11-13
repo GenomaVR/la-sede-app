@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import Container from '../components/Container'
 import NewsCard from '../components/NewsCard'
 
 export default function Home() {
+  const { state } = useAuth()
+  const user = state?.user
+
   return (
-    // Alto exacto = viewport - navbar (56px), sin scroll
     <div className="relative h-[calc(100vh-56px)] w-full overflow-hidden">
       {/* Fondo full-bleed */}
       <img
@@ -17,7 +20,7 @@ export default function Home() {
 
       {/* Contenido: 55% hero / 45% noticias */}
       <div className="relative h-full grid grid-rows-[55%_45%]">
-        {/* HERO (centrado) */}
+        {/* HERO */}
         <div className="flex items-center justify-center text-center px-4">
           <div>
             <h1 className="text-4xl sm:text-7xl font-extrabold tracking-tight text-white">
@@ -26,19 +29,29 @@ export default function Home() {
             <h2 className="text-4xl sm:text-2xl font-extrabold tracking-tight text-white pt-5 pb-5">
               Aca respiramos <span className="text-red-500">FUTBOL</span>
             </h2>
-            <p className="mt-3 text-neutral-300 font-semibold">
-              Portal del socio. Iniciá sesión para continuar.
-            </p>
-            <Link
-              to="/login"
-              className="mt-5 inline-block px-6 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-lg"
-            >
-              Iniciar sesión
-            </Link>
+
+            {!user ? (
+              <>
+                <p className="mt-3 text-neutral-300 font-semibold">
+                  Portal del socio. Iniciá sesión para continuar.
+                </p>
+                <Link
+                  to="/login"
+                  className="mt-5 inline-block px-6 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-lg"
+                >
+                  Iniciar sesión
+                </Link>
+              </>
+            ) : (
+              <p className="mt-4 text-neutral-300 text-lg font-semibold">
+                ¡Qué gusto volver a verte por aquí,{' '}
+                <span className="text-red-500">{user.nombre || 'socio'}</span>!
+              </p>
+            )}
           </div>
         </div>
 
-        {/* NOTICIAS (dentro del mismo hero, sin provocar scroll) */}
+        {/* NOTICIAS */}
         <div className="flex items-center">
           <Container>
             <h2 className="text-lg font-semibold text-neutral-200 mb-3">
