@@ -14,16 +14,18 @@ export default function Login() {
   const [password, setPassword] = useState('socio')
   const [error, setError] = useState(null)
 
-  const onSubmit = (e) => {
-    e.preventDefault()
-    setError(null)
-    try {
-      login(email, password)
-      nav('/perfil')
-    } catch (err) {
-      setError(err.message)
-    }
+const onSubmit = (e) => {
+  e.preventDefault()
+  setError(null)
+  try {
+    login(email, password)
+    nav('/')                 
+    window.location.reload() 
+  } catch (err) {
+    setError(err.message)
   }
+}
+
 
   return (
     // Full pantalla visible (descontando tu navbar overlay de 56px)
@@ -87,6 +89,15 @@ export default function Login() {
             </p>
             <p className="text-xs text-neutral-500 text-center mt-2">
              <span className="text-neutral-300">Solo para test luego los datos de admin no aparece</span> 
+            </p>
+            <p className="text-xs text-neutral-500 text-center mt-3">
+              ¿No tenés una cuenta?{' '}
+              <span
+                onClick={() => nav('/register')}
+                className="text-red-500 hover:underline cursor-pointer"
+              >
+                Registrate
+              </span>
             </p>
           </form>
         </div>
