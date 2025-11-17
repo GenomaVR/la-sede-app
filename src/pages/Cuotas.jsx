@@ -2,54 +2,66 @@ import { useMemo, useState } from "react";
 import Container from "../components/Container";
 import { useAuth } from "../context/AuthContext";
 
+const MONTO_CUOTA = 15000;
+
 const formatARS = (n) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(n);
 
 export default function Cuotas() {
   const { user, state, setState } = useAuth();
 
-  // Si por alguna razón no hay user (edge), no rompas
-  const socio = useMemo(() => state.usuarios.find(u => u.id === user?.id), [state.usuarios, user?.id]);
+  // Si por alguna razón no hay user (edge), evitá romper:
+  const socio = useMemo(
+    () => state.usuarios.find((u) => u.id === user?.id),
+    [state.usuarios, user?.id]
+  );
 
   const hoy = new Date();
   const periodoActual = `${String(hoy.getMonth() + 1).padStart(2, "0")}/${hoy.getFullYear()}`;
 
   const cuota = socio?.cuota;
   const estaPaga = cuota?.estado === "paga";
-  const periodoShown = cuota ? `${String(cuota.mes).padStart(2, "0")}/${cuota.anio}` : periodoActual;
+  const periodoShown = cuota
+    ? `${String(cuota.mes).padStart(2, "0")}/${cuota.anio}`
+    : periodoActual;
 
   // UI state
   const [medio, setMedio] = useState(cuota?.medio || "mercadopago");
-  const [monto, setMonto] = useState(15000); // valor sugerido editable
   const [showTicket, setShowTicket] = useState(false);
 
-const pagarAhora = () => {
-  const m = hoy.getMonth() + 1
-  const y = hoy.getFullYear()
+  const pagarAhora = () => {
+    const m = hoy.getMonth() + 1;
+    const y = hoy.getFullYear();
 
-  const op = `AJ-${y}${String(m).padStart(2, "0")}${String(hoy.getDate()).padStart(2, "0")}-${String(hoy.getTime()).slice(-6)}`
-  const nuevoPago = {
-    id: Date.now(),
-    userId: socio.id,
-    mes: m,
-    anio: y,
-    medio,
-    monto,
-    fecha: new Date().toISOString(),
-    op,
-  }
+    const op = `AJ-${y}${String(m).padStart(2, "0")}${String(hoy.getDate()).padStart(2, "0")}-${String(
+      hoy.getTime()
+    ).slice(-6)}`;
 
-  setState(prev => ({
-    ...prev,
-    usuarios: prev.usuarios.map(u =>
-      u.id === socio.id ? { ...u, cuota: { mes: m, anio: y, estado: "paga", medio } } : u
-    ),
-    pagos: [...(prev.pagos || []), nuevoPago],
-  }))
+    const nuevoPago = {
+      id: Date.now(),
+      userId: socio.id,
+      mes: m,
+      anio: y,
+      medio,
+      monto: MONTO_CUOTA,
+      fecha: new Date().toISOString(),
+      op,
+    };
 
-  setShowTicket(true)
-}
+    setState((prev) => ({
+      ...prev,
+      usuarios: prev.usuarios.map((u) =>
+        u.id === socio.id ? { ...u, cuota: { mes: m, anio: y, estado: "paga", medio } } : u
+      ),
+      pagos: [...(prev.pagos || []), nuevoPago],
+    }));
 
+    setShowTicket(true);
+  };
 
   return (
     <div className="relative min-h-[100svh] pt-14 overflow-hidden">
@@ -63,9 +75,7 @@ const pagarAhora = () => {
 
       <div className="relative">
         <Container className="py-8">
-          <h1 className="text-2xl font-extrabold mb-4">
-            Cuotas del socio
-          </h1>
+          <h1 className="text-2xl font-extrabold mb-4">Cuotas del socio</h1>
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Estado de la cuota */}
@@ -83,9 +93,18 @@ const pagarAhora = () => {
               </p>
 
               <div className="mt-4 text-sm text-neutral-400">
-                <p>Socio: <span className="text-neutral-200">{socio?.nombre} {socio?.apellido}</span></p>
-                <p>DNI: <span className="text-neutral-200">{socio?.dni || "-"}</span></p>
-                <p>Email: <span className="text-neutral-200">{socio?.email}</span></p>
+                <p>
+                  Socio:{" "}
+                  <span className="text-neutral-200">
+                    {socio?.nombre} {socio?.apellido}
+                  </span>
+                </p>
+                <p>
+                  DNI: <span className="text-neutral-200">{socio?.dni || "-"}</span>
+                </p>
+                <p>
+                  Email: <span className="text-neutral-200">{socio?.email}</span>
+                </p>
               </div>
             </section>
 
@@ -94,6 +113,7 @@ const pagarAhora = () => {
               <h2 className="text-lg font-semibold">Realizar pago</h2>
 
               <div className="grid gap-4 sm:grid-cols-2 mt-4">
+                {/* Medio de pago */}
                 <div>
                   <label className="block text-xs text-neutral-400 mb-1">Medio de pago</label>
                   <div className="grid grid-cols-1 gap-2">
@@ -133,23 +153,14 @@ const pagarAhora = () => {
                   </div>
                 </div>
 
+                {/* Monto fijo */}
                 <div>
                   <label className="block text-xs text-neutral-400 mb-1">Monto</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={monto}
-                      onChange={(e) =>
-                        setMonto(Number(String(e.target.value).replace(/\D+/g, "")) || 0)
-                      }
-                      className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-600"
-                      placeholder="15000"
-                    />
-                    <span className="text-neutral-400 text-sm whitespace-nowrap">
-                      {formatARS(monto)}
+                  <div className="flex items-center justify-between rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2">
+                    <span className="text-neutral-200 font-semibold">
+                      {formatARS(MONTO_CUOTA)}
                     </span>
+                    <span className="text-xs text-neutral-500">Cuota mensual</span>
                   </div>
 
                   {!estaPaga ? (
@@ -184,7 +195,7 @@ const pagarAhora = () => {
           onClose={() => setShowTicket(false)}
           socio={socio}
           medio={medio}
-          monto={monto}
+          monto={MONTO_CUOTA}
           fecha={hoy}
         />
       )}
@@ -195,9 +206,7 @@ const pagarAhora = () => {
 /** Modal Comprobante */
 function TicketModal({ onClose, socio, medio, monto, fecha }) {
   const medioLabel =
-    medio === "debito" ? "Tarjeta de débito"
-    : medio === "efectivo" ? "Efectivo"
-    : "MercadoPago";
+    medio === "debito" ? "Tarjeta de débito" : medio === "efectivo" ? "Efectivo" : "MercadoPago";
 
   const fechaStr = new Intl.DateTimeFormat("es-AR", {
     dateStyle: "medium",
@@ -218,7 +227,12 @@ function TicketModal({ onClose, socio, medio, monto, fecha }) {
           <Row label="Fecha" value={fechaStr} />
           <Row label="Medio" value={medioLabel} />
           <Row label="Monto" value={formatARS(monto)} />
-          <Row label="N° Operación" value={`AJ-${fecha.getFullYear()}${String(fecha.getMonth()+1).padStart(2,"0")}${String(fecha.getDate()).padStart(2,"0")}-${String(fecha.getTime()).slice(-6)}`} />
+          <Row
+            label="N° Operación"
+            value={`AJ-${fecha.getFullYear()}${String(fecha.getMonth() + 1).padStart(2, "0")}${String(
+              fecha.getDate()
+            ).padStart(2, "0")}-${String(fecha.getTime()).slice(-6)}`}
+          />
         </div>
 
         <div className="mt-6 flex gap-3 justify-end">

@@ -1,123 +1,197 @@
-import { useState } from 'react'
-import Container from '../components/Container'
-import { useAuth } from '../context/AuthContext'
-import { useData } from '../context/DataContext'
-import Form from '../components/forms/Form'
-import Input from '../components/ui/Input'
-import Select from '../components/ui/Select'
-import Button from '../components/ui/Button'
-import Alert from '../components/ui/Alert'
-import Card from '../components/ui/Card'
-import PageHeader from '../components/layout/PageHeader'
+import { useState, useMemo } from "react";
+import Container from "../components/Container";
+import { useAuth } from "../context/AuthContext";
+import { useData } from "../context/DataContext";
+import Form from "../components/forms/Form";
+import Select from "../components/ui/Select";
+import Alert from "../components/ui/Alert";
+import Card from "../components/ui/Card";
+import PageHeader from "../components/layout/PageHeader";
+
+// Genera slots de 1 hora entre 08:00 y 00:00
+const HOUR_SLOTS = (() => {
+  const slots = [];
+  for (let h = 8; h <= 23; h++) {
+    const startH = String(h).padStart(2, "0");
+    const endH = String((h + 1) % 24).padStart(2, "0"); // 23 -> 00
+    const start = `${startH}:00`;
+    const end = `${endH}:00`;
+    slots.push({
+      value: `${start}-${end}`,
+      label: `${start} - ${end}`,
+      start,
+      end,
+    });
+  }
+  return slots;
+})();
+
+const DEFAULT_SLOT_VALUE =
+  HOUR_SLOTS.find((s) => s.start === "18:00")?.value || HOUR_SLOTS[0].value;
 
 export default function Canchas() {
-  const { state } = useAuth()
-  const { reservarCancha } = useData()
-  const [canchaId, setCanchaId] = useState(1)
-  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10))
-  const [horaInicio, setHoraInicio] = useState('18:00')
-  const [horaFin, setHoraFin] = useState('19:00')
-  const [msg, setMsg] = useState('')
-  const [msgType, setMsgType] = useState('success')
+  const { state } = useAuth();
+  const { reservarCancha } = useData();
 
-  const reservar = e => {
-  e.preventDefault()
-  setMsg('')
+  const [canchaId, setCanchaId] = useState(1);
+  const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [slotValue, setSlotValue] = useState(DEFAULT_SLOT_VALUE);
+  const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState("success");
 
-  const cancha = state.canchas.find(c => c.id === Number(canchaId))
-  if (!cancha || cancha.estado !== 'disponible') {
-    setMsg('Esta cancha no está disponible ❌')
-    setMsgType('error')
-    return
-  }
-
-  try {
-    reservarCancha({ 
-      canchaId: Number(canchaId), 
-      fecha, 
-      horaInicio, 
-      horaFin 
-    })
-    setMsg('Reserva confirmada ✅')
-    setMsgType('success')
-  } catch (ex) {
-    setMsg(ex.message)
-    setMsgType('error')
-  }
-}
-
-  const canchaOptions = state.canchas.map(c => ({
+  const canchaOptions = state.canchas.map((c) => ({
     value: c.id,
-    label: `${c.nombre} - ${c.estado}`
-  }))
+    label: `${c.nombre} - ${c.estado}`,
+  }));
 
-  // Reservas del día para la cancha seleccionada
-  const reservasDelDia = state.reservas.filter(
-    r => r.canchaId === Number(canchaId) && r.fecha === fecha
-  )
+  const slotOptions = HOUR_SLOTS.map((s) => ({
+    value: s.value,
+    label: s.label,
+  }));
+
+  const reservasDelDia = useMemo(
+    () =>
+      state.reservas.filter(
+        (r) => r.canchaId === Number(canchaId) && r.fecha === fecha
+      ),
+    [state.reservas, canchaId, fecha]
+  );
+
+  const reservar = (e) => {
+    e.preventDefault();
+    setMsg("");
+
+    const cancha = state.canchas.find((c) => c.id === Number(canchaId));
+    if (
+      !cancha ||
+      (cancha.estado !== "ok" && cancha.estado !== "disponible")
+    ) {
+      setMsg("Esta cancha no está disponible ❌");
+      setMsgType("error");
+      return;
+    }
+
+    const slot = HOUR_SLOTS.find((s) => s.value === slotValue);
+    if (!slot) {
+      setMsg("Seleccioná un horario válido ❌");
+      setMsgType("error");
+      return;
+    }
+
+    const { start: horaInicio, end: horaFin } = slot;
+
+    try {
+      reservarCancha({
+        canchaId: Number(canchaId),
+        fecha,
+        horaInicio,
+        horaFin,
+      });
+      setMsg("Reserva confirmada ✅");
+      setMsgType("success");
+    } catch (ex) {
+      setMsg(ex.message);
+      setMsgType("error");
+    }
+  };
+
+  const fondoSrc = "/images/bg-aj.jpg";
 
   return (
-    <Container>
-      <PageHeader title="Reservar Cancha" />
-      
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Formulario de reserva */}
-        <Card>
-          <h2 className="text-lg font-semibold mb-4">Nueva Reserva</h2>
-          <Form onSubmit={reservar}>
-            <Select
-              label="Cancha"
-              value={canchaId}
-              onChange={e => setCanchaId(e.target.value)}
-              options={canchaOptions}
-            />
-            <Input
-              label="Fecha"
-              type="date"
-              value={fecha}
-              onChange={e => setFecha(e.target.value)}
-              min={new Date().toISOString().slice(0, 10)}
-            />
-            <Input
-              label="Hora inicio"
-              type="time"
-              value={horaInicio}
-              onChange={e => setHoraInicio(e.target.value)}
-            />
-            <Input
-              label="Hora fin"
-              type="time"
-              value={horaFin}
-              onChange={e => setHoraFin(e.target.value)}
-            />
-            <Button type="submit">Reservar</Button>
-            {msg && <Alert type={msgType} message={msg} />}
-          </Form>
-        </Card>
+    <div className="relative min-h-[100svh] pt-14 overflow-hidden">
+      {/* Fondo tipo Home/Perfil */}
+      <img
+        src={fondoSrc}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover opacity-40"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
 
-        {/* Reservas del día */}
-        <Card>
-          <h2 className="text-lg font-semibold mb-4">
-            Reservas del día ({fecha})
-          </h2>
-          {reservasDelDia.length === 0 ? (
-            <p className="text-neutral-400">No hay reservas para este día</p>
-          ) : (
-            <div className="space-y-2">
-              {reservasDelDia.map(r => (
-                <div 
-                  key={r.id}
-                  className="p-3 bg-neutral-800 rounded-lg border border-neutral-700"
-                >
-                  <p className="text-sm text-neutral-300">
-                    <span className="font-medium">{r.horaInicio} - {r.horaFin}</span>
-                  </p>
-                </div>
-              ))}
+      <div className="relative">
+        <Container className="py-8">
+          <PageHeader title="Reservar Cancha" />
+
+          {msg && (
+            <div className="mb-4">
+              <Alert type={msgType} message={msg} />
             </div>
           )}
-        </Card>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Formulario de reserva */}
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">Nueva Reserva</h2>
+              <Form onSubmit={reservar}>
+                <Select
+                  label="Cancha"
+                  value={canchaId}
+                  onChange={(e) => setCanchaId(e.target.value)}
+                  options={canchaOptions}
+                />
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-neutral-200 mb-1">
+                    Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    min={new Date().toISOString().slice(0, 10)}
+                    className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+
+                <Select
+                  label="Horario"
+                  value={slotValue}
+                  onChange={(e) => setSlotValue(e.target.value)}
+                  options={slotOptions}
+                />
+
+                <button
+                  type="submit"
+                  className="mt-4 w-full sm:w-auto px-5 py-2.5 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 transition"
+                >
+                  Reservar
+                </button>
+              </Form>
+            </Card>
+
+            {/* Reservas del día */}
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">
+                Reservas del día ({fecha})
+              </h2>
+              {reservasDelDia.length === 0 ? (
+                <p className="text-neutral-400">
+                  No hay reservas para este día
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  {reservasDelDia.map((r) => (
+                    <div
+                      key={r.id}
+                      className="p-3 bg-neutral-900/80 rounded-lg border border-neutral-700 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-sm text-neutral-200 font-medium">
+                          {r.horaInicio} - {r.horaFin}
+                        </p>
+                        {r.nombreSocio && (
+                          <p className="text-xs text-neutral-400">
+                            {r.nombreSocio}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </Container>
       </div>
-    </Container>
-  )
+    </div>
+  );
 }
