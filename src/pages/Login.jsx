@@ -70,7 +70,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-neutral-900 to-neutral-800 
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 to-neutral-800 
                     flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-neutral-800/80 backdrop-blur-sm rounded-xl shadow-2xl 
