@@ -2,6 +2,11 @@
 
 
 
+// src/components/Container.jsx
 export default function Container({ children }) {
-return <div style={{maxWidth:980, margin:'16px auto', padding:'0 16px'}}>{children}</div>
+  return (
+    <div className="max-w-6xl mx-auto w-full px-4 py-6 overflow-y-auto">
+      {children}
+    </div>
+  )
 }

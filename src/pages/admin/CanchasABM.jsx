@@ -1,11 +1,12 @@
-import { useAuth } from '../../context/AuthContext'
+import { useData } from '../../context/DataContext'
 import Container from '../../components/Container'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import PageHeader from '../../components/layout/PageHeader'
+import Button from '../../components/ui/Button'
 
 export default function CanchasABM() {
-  const { state } = useAuth()
+  const { state, admin } = useData()
 
   return (
     <Container>
@@ -20,6 +21,13 @@ export default function CanchasABM() {
                 {c.estado}
               </Badge>
             </div>
+
+            <Button
+              variant={c.estado === 'disponible' ? 'warning' : 'success'}
+              onClick={() => admin.toggleEstadoCancha(c.id)}
+            >
+              {c.estado === 'disponible' ? 'Marcar como no disponible' : 'Marcar como disponible'}
+            </Button>
           </Card>
         ))}
       </div>
