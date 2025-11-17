@@ -60,16 +60,19 @@ const onSubmit = (e) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm text-neutral-300 mb-1">Password</label>
-              <input
-                type="password"
-                className="w-full rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-red-600"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 to-neutral-800 
+                    flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-neutral-800/80 backdrop-blur-sm rounded-xl shadow-2xl 
+                        overflow-hidden border border-neutral-700/50">
+          {/* Header */}
+          <div className="bg-neutral-900/80 px-8 py-6 border-b border-neutral-700/50">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="bg-red-600 p-2 rounded-lg">
+                <LogIn className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white">Iniciar sesión</h1>
             </div>
 
             {error && (
