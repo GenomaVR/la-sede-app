@@ -5,10 +5,21 @@ import { Link } from "react-router-dom";
 
 export default function Perfil() {
   const { user, state, setState } = useAuth();
+
   const socio = useMemo(
     () => state.usuarios.find((u) => u.id === user.id),
     [state.usuarios, user.id]
   );
+
+  // Pagos del usuario (para saber último pago)
+  const pagosUser = useMemo(() => {
+    const base = Array.isArray(state.pagos) ? state.pagos : [];
+    return base
+      .filter((p) => p.userId === user.id)
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  }, [state.pagos, user.id]);
+
+  const ultimoPago = pagosUser[0] || null;
 
   // Drafts de edición
   const [nombreDraft, setNombreDraft] = useState(socio?.nombre || "");
@@ -151,7 +162,8 @@ export default function Perfil() {
                   </label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <input
-                      className="flex-1 rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-neutral-100 placeholder:text-white-500 focus:outline-none focus:ring-2 focus:ring-red-600"
+                      type="text"
+                      className="flex-1 rounded-md bg-neutral-900 border border-neutral-800 px-3 py-2 text-neutral-100 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-red-600"
                       value={dniDraft}
                       onChange={(e) =>
                         setDniDraft(
@@ -182,6 +194,41 @@ export default function Perfil() {
                   <p className={`mt-2 text-sm font-semibold ${cuotaColor}`}>
                     {cuotaTexto}
                   </p>
+
+                  {/* Detalle del último pago */}
+                  {cuota?.estado === "paga" && (
+                    <p className="mt-1 text-xs text-neutral-400">
+                      Pago cuota:{" "}
+                      {ultimoPago ? (
+                        <>
+                          <span className="text-neutral-200">
+                            {new Date(ultimoPago.fecha).toLocaleString("es-AR", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                          {" - "}
+                          <span className="text-neutral-200">
+                            {labelMedio(ultimoPago.medio)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-neutral-200">
+                            sin fecha registrada
+                          </span>
+                          {cuota?.medio && (
+                            <>
+                              {" - "}
+                              <span className="text-neutral-200">
+                                {labelMedio(cuota.medio)}
+                              </span>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  )}
                 </div>
 
                 <div className="text-right">
@@ -204,8 +251,6 @@ export default function Perfil() {
                     Los pagos se reflejan automáticamente.
                   </p>
                 </div>
-
-
               </div>
             </section>
           </div>
@@ -256,151 +301,37 @@ function ResumenCard({ title, ok, okText, noText, href }) {
         </span>
       </div>
       <p className="text-sm text-neutral-300 mt-2">{ok ? okText : noText}</p>
-      <a
-        href={href}
+      <Link
+        to={href}
         className="inline-block mt-4 text-sm font-medium text-red-400 hover:text-red-300"
       >
         Ir a {title.toLowerCase()} →
-      </a>
+      </Link>
     </section>
   );
 }
 
 /* Hook: pagos del usuario actual, ordenados desc por fecha */
 function usePagosUser() {
-  const { user, state } = useAuth()
+  const { user, state } = useAuth();
   const pagosUser = useMemo(() => {
-    const arr = (state.pagos || []).filter(p => p.userId === user.id)
-    return arr.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-  }, [state.pagos, user.id])
-  return pagosUser
-}
-
-function PagosHistorial() {
-  const pagos = usePagosUser()
-  return (
-    <section className="neon-card bg-neutral-900/80 backdrop-blur-md border border-neutral-800 rounded-2xl p-6">
-      <h3 className="text-lg font-semibold">Pagos realizados</h3>
-      {pagos.length === 0 ? (
-        <p className="text-neutral-400 mt-3 text-sm">Aún no registrás pagos.</p>
-      ) : (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-neutral-400">
-              <tr>
-                <th className="text-left py-2 pr-3">Período</th>
-                <th className="text-left py-2 pr-3">Fecha</th>
-                <th className="text-left py-2 pr-3">Medio</th>
-                <th className="text-left py-2">Monto</th>
-              </tr>
-            </thead>
-            <tbody className="text-neutral-200">
-              {pagos.slice(0, 6).map(p => (
-                <tr key={p.id} className="border-t border-neutral-800">
-                  <td className="py-2 pr-3">{String(p.mes).padStart(2, '0')}/{p.anio}</td>
-                  <td className="py-2 pr-3">{new Date(p.fecha).toLocaleString('es-AR')}</td>
-                  <td className="py-2 pr-3">{labelMedio(p.medio)}</td>
-                  <td className="py-2">{formatARS(p.monto)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {pagos.length > 6 && (
-            <p className="text-xs text-neutral-500 mt-2">Mostrando los últimos 6 pagos.</p>
-          )}
-        </div>
-      )}
-    </section>
-  )
-}
-
-function CuotasPendientes() {
-  const { user, state } = useAuth()
-  const socio = state.usuarios.find(u => u.id === user.id)
-  const pagos = (state.pagos || []).filter(p => p.userId === user.id)
-
-  const ultimoPago = pagos
-    .slice()
-    .sort((a, b) => (a.anio !== b.anio ? b.anio - a.anio : b.mes - a.mes))[0]
-
-  const refMes  = ultimoPago?.mes  ?? (socio?.cuota?.mes  ?? null)
-  const refAnio = ultimoPago?.anio ?? (socio?.cuota?.anio ?? null)
-
-  const hoy = new Date()
-  const pend = buildPendientes(refMes, refAnio, hoy, pagos, socio?.cuota)
-
-  return (
-    <section className="neon-card bg-neutral-900/80 backdrop-blur-md border border-neutral-800 rounded-2xl p-6">
-      <h3 className="text-lg font-semibold">Cuotas pendientes</h3>
-
-      {pend.length === 0 ? (
-        <p className="text-neutral-400 mt-3 text-sm">No hay cuotas pendientes hasta el período actual.</p>
-      ) : (
-        <ul className="mt-4 space-y-2">
-          {pend.map((p) => (
-            <li key={`${p.anio}-${p.mes}`} className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2">
-              <span className="text-neutral-200">{String(p.mes).padStart(2, '0')}/{p.anio}</span>
-              <span className="text-amber-300 text-xs px-2 py-1 rounded border border-amber-700 bg-amber-900/10">Pendiente</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <p className="text-xs text-neutral-500 mt-3">Los pendientes se calculan hasta el mes en curso.</p>
-    </section>
-  )
+    const arr = (state.pagos || []).filter((p) => p.userId === user.id);
+    return arr.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  }, [state.pagos, user.id]);
+  return pagosUser;
 }
 
 /* Helpers */
 const formatARS = (n) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n || 0)
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(n || 0);
 
 const labelMedio = (m) =>
-  m === 'debito' ? 'Tarjeta de débito' : m === 'efectivo' ? 'Efectivo' : 'MercadoPago'
-
-function buildPendientes(refMes, refAnio, hoy, pagos, cuotaObj) {
-  let startMes = Number(refMes)
-  let startAnio = Number(refAnio)
-
-  if (!startMes || !startAnio) {
-    if (cuotaObj?.mes && cuotaObj?.anio) {
-      startMes = cuotaObj.mes
-      startAnio = cuotaObj.anio
-    } else {
-      return []
-    }
-  }
-
-  const refEstaPaga = Boolean(pagos.find(p => p.mes === startMes && p.anio === startAnio)) || cuotaObj?.estado === 'paga'
-
-  let fromMes = startMes
-  let fromAnio = startAnio
-  if (refEstaPaga) {
-    const next = addMonth(startMes, startAnio)
-    fromMes = next.m
-    fromAnio = next.y
-  }
-
-  const currentMes = hoy.getMonth() + 1
-  const currentAnio = hoy.getFullYear()
-
-  const pagosSet = new Set(pagos.map(p => `${p.anio}-${p.mes}`))
-
-  const out = []
-  let m = fromMes
-  let y = fromAnio
-  while (y < currentAnio || (y === currentAnio && m <= currentMes)) {
-    const key = `${y}-${m}`
-    if (!pagosSet.has(key)) out.push({ mes: m, anio: y })
-    const next = addMonth(m, y)
-    m = next.m
-    y = next.y
-  }
-  return out
-}
-
-function addMonth(m, y) {
-  let nm = m + 1, ny = y
-  if (nm > 12) { nm = 1; ny = y + 1 }
-  return { m: nm, y: ny }
-}
+  m === "debito"
+    ? "Tarjeta de débito"
+    : m === "efectivo"
+    ? "Efectivo"
+    : "MercadoPago";
